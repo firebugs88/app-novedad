@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión - Funcional</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --background-color: #f5f7fa;
+            --text-color: #2c3e50;
+            --card-background: #ffffff;
+            --border-color: #e0e0e0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+        
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar nav {
+            flex: 1;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #34495e;
+        }
+        
+        .nav-item {
+            padding: 15px 20px;
+            margin: 5px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-item:hover {
+            background-color: #34495e;
+        }
+        
+        .nav-item.active {
+            background-color: var(--primary-color);
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #ecf0f1;
+            color: var(--text-color);
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* Filter Bar */
+        .filter-bar {
+            background-color: var(--card-background);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .filter-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #7f8c8d;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        /* Cards */
+        .cards-container {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .card {
+            background-color: var(--card-background);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            transition: all 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .card[data-completed="true"] {
+            opacity: 0.6;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-right: 15px;
+        }
+
+        .card-title[data-completed="true"] {
+            text-decoration: line-through;
+        }
+        
+        .priority-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+        }
+        
+        .priority-Alta { background-color: #fee; color: #e74c3c; }
+        .priority-Media { background-color: #fff3cd; color: #f39c12; }
+        .priority-Baja { background-color: #d4edda; color: #27ae60; }
+        
+        .card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .card-description {
+            line-height: 1.6;
+        }
+        
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+        
+        /* Checkbox */
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary-color);
+        }
+        
+        /* Success Message */
+        .success-message {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #27ae60;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+            display: none;
+            z-index: 3000;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .success-message.show {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .modal-header {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">📋 GestiónPro</div>
+            <nav>
+                <div class="nav-item active" onclick="showSection('novedades')">
+                    <span class="nav-icon">📝</span>
+                    <span>Novedades</span>
+                </div>
+                <div class="nav-item" onclick="showSection('consignas')">
+                    <span class="nav-icon">✅</span>
+                    <span>Consignas</span>
+                </div>
+            </nav>
+        </div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Novedades Section -->
+            <div id="novedades-section">
+                <div class="header">
+                    <h1 class="page-title">Novedades Diarias</h1>
+                    <button class="btn btn-primary" onclick="openNovedadModal()">
+                        <span>+</span>
+                        <span>Nueva Novedad</span>
+                    </button>
+                </div>
+                <!-- Filter Bar for Novedades -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label for="novedad-search" class="filter-label">Buscar por descripción</label>
+                        <input type="text" id="novedad-search" class="filter-input" placeholder="Buscar...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="novedad-filter-prioridad" class="filter-label">Prioridad</label>
+                        <select id="novedad-filter-prioridad" class="filter-input">
+                            <option value="">Todas</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Media">Media</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="novedad-filter-estado" class="filter-label">Estado</label>
+                        <select id="novedad-filter-estado" class="filter-input">
+                            <option value="">Todos</option>
+                            <option value="false">Pendiente</option>
+                            <option value="true">Completada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="cards-container" id="novedades-container">
+                    <!-- Novedades will be loaded here by JavaScript -->
+                </div>
+            </div>
+
+            <!-- Consignas Section -->
+            <div id="consignas-section" style="display: none;">
+                <div class="header">
+                    <h1 class="page-title">Consignas Generales</h1>
+                     <button class="btn btn-primary" onclick="openConsignaModal()">
+                        <span>+</span>
+                        <span>Nueva Consigna</span>
+                    </button>
+                </div>
+                <!-- Filter Bar for Consignas -->
+                 <div class="filter-bar">
+                    <div class="filter-group">
+                        <label for="consigna-search" class="filter-label">Buscar por título</label>
+                        <input type="text" id="consigna-search" class="filter-input" placeholder="Buscar...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="consigna-filter-estado" class="filter-label">Estado</label>
+                        <select id="consigna-filter-estado" class="filter-input">
+                            <option value="">Todos</option>
+                             <option value="false">Pendiente</option>
+                            <option value="true">Completada</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="cards-container" id="consignas-container">
+                    <!-- Consignas will be loaded here by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Nueva/Editar Novedad -->
+    <div class="modal" id="novedad-modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="novedad-modal-title">Nueva Novedad</h2>
+            <form id="novedad-form">
+                <input type="hidden" id="novedad-id">
+                <div class="form-group">
+                    <label class="form-label">Descripción *</label>
+                    <input type="text" id="novedad-descripcion" class="form-input" placeholder="Ej: Préstamo de llaves oficina 201" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Responsable *</label>
+                    <input type="text" id="novedad-responsable" class="form-input" placeholder="Nombre del responsable" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Hora inicio *</label>
+                    <input type="time" id="novedad-hora-inicio" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Prioridad</label>
+                    <select id="novedad-prioridad" class="form-input">
+                        <option>Baja</option>
+                        <option>Media</option>
+                        <option selected>Alta</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Observaciones</label>
+                    <textarea id="novedad-observaciones" class="form-input" rows="3" placeholder="Detalles adicionales..."></textarea>
+                </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('novedad-modal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Nueva/Editar Consigna -->
+    <div class="modal" id="consigna-modal">
+        <div class="modal-content">
+            <h2 class="modal-header" id="consigna-modal-title">Nueva Consigna</h2>
+            <form id="consigna-form">
+                <input type="hidden" id="consigna-id">
+                 <div class="form-group">
+                    <label class="form-label">Título *</label>
+                    <input type="text" id="consigna-titulo" class="form-input" placeholder="Ej: Verificar sistema de alarmas" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Asignado a *</label>
+                    <input type="text" id="consigna-asignado" class="form-input" placeholder="Departamento o persona" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Descripción</label>
+                    <textarea id="consigna-descripcion" class="form-input" rows="3" placeholder="Detalles de la consigna..."></textarea>
+                </div>
+                <div class="card-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('consigna-modal')">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+     <!-- Confirm Delete Modal -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content" style="width: 400px;">
+            <h2 class="modal-header">Confirmar Eliminación</h2>
+            <p>¿Estás seguro de que quieres eliminar este elemento? Esta acción no se puede deshacer.</p>
+            <div class="card-actions" style="margin-top: 20px; justify-content: flex-end;">
+                <button type="button" class="btn btn-secondary" id="cancel-delete-btn">Cancelar</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Eliminar</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Message -->
+    <div class="success-message" id="success-message">
+        <!-- Message will be set by JS -->
+    </div>
+    
+    <script>
+    // --- DATABASE (IndexedDB) SETUP ---
+    let db;
+    const DB_NAME = 'GestionProDB';
+    const NOVEDADES_STORE = 'novedades';
+    const CONSIGNAS_STORE = 'consignas';
+
+    function initDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, 1);
+
+            request.onupgradeneeded = (event) => {
+                db = event.target.result;
+                if (!db.objectStoreNames.contains(NOVEDADES_STORE)) {
+                    db.createObjectStore(NOVEDADES_STORE, { keyPath: 'id', autoIncrement: true });
+                }
+                if (!db.objectStoreNames.contains(CONSIGNAS_STORE)) {
+                    db.createObjectStore(CONSIGNAS_STORE, { keyPath: 'id', autoIncrement: true });
+                }
+            };
+
+            request.onsuccess = (event) => {
+                db = event.target.result;
+                console.log('Database initialized successfully');
+                resolve();
+            };
+
+            request.onerror = (event) => {
+                console.error('Database error:', event.target.errorCode);
+                reject(event.target.errorCode);
+            };
+        });
+    }
+
+    function dbAction(storeName, mode, action) {
+        return new Promise((resolve, reject) => {
+            if (!db) {
+                console.error("DB not initialized");
+                return reject(new Error("DB not initialized"));
+            }
+            
+            try {
+                const transaction = db.transaction(storeName, mode);
+                
+                transaction.onerror = (event) => {
+                    console.error(`Transaction error for ${storeName}:`, event.target.error);
+                    reject(event.target.error);
+                };
+                
+                transaction.onabort = (event) => {
+                    console.error(`Transaction aborted for ${storeName}:`, event.target.error);
+                    reject(new Error("Transaction aborted"));
+                };
+                
+                const store = transaction.objectStore(storeName);
+                action(store, resolve, reject, transaction);
+            } catch (error) {
+                console.error(`Error creating transaction for ${storeName}:`, error);
+                reject(error);
+            }
+        });
+    }
+
+    const dbManager = {
+        add: (storeName, item) => {
+            console.log(`Adding item to ${storeName}:`, item);
+            return dbAction(storeName, 'readwrite', (store, resolve, reject) => {
+                const request = store.add(item);
+                request.onsuccess = (event) => {
+                    console.log(`Item added successfully to ${storeName} with ID:`, event.target.result);
+                    resolve(event.target.result);
+                };
+                request.onerror = (event) => {
+                    console.error(`Error adding item to ${storeName}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        },
+        
+        getAll: (storeName) => {
+            console.log(`Getting all items from ${storeName}`);
+            return dbAction(storeName, 'readonly', (store, resolve, reject) => {
+                const request = store.getAll();
+                request.onsuccess = (event) => {
+                    const result = event.target.result;
+                    console.log(`Retrieved ${result.length} items from ${storeName}`);
+                    resolve(result);
+                };
+                request.onerror = (event) => {
+                    console.error(`Error getting items from ${storeName}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        },
+        
+        update: (storeName, item) => {
+            console.log(`Updating item in ${storeName}:`, item);
+            return dbAction(storeName, 'readwrite', (store, resolve, reject) => {
+                const request = store.put(item);
+                request.onsuccess = (event) => {
+                    console.log(`Item updated successfully in ${storeName}`);
+                    resolve(event.target.result);
+                };
+                request.onerror = (event) => {
+                    console.error(`Error updating item in ${storeName}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        },
+        
+        delete: (storeName, id) => {
+            console.log(`Deleting item with ID ${id} from ${storeName}`);
+            return dbAction(storeName, 'readwrite', (store, resolve, reject) => {
+                const request = store.delete(id);
+                request.onsuccess = (event) => {
+                    console.log(`Item deleted successfully from ${storeName}`);
+                    resolve(event.target.result);
+                };
+                request.onerror = (event) => {
+                    console.error(`Error deleting item from ${storeName}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        },
+        
+        // Nueva función para obtener un elemento específico
+        get: (storeName, id) => {
+            console.log(`Getting item with ID ${id} from ${storeName}`);
+            return dbAction(storeName, 'readonly', (store, resolve, reject) => {
+                const request = store.get(id);
+                request.onsuccess = (event) => {
+                    const result = event.target.result;
+                    console.log(`Retrieved item from ${storeName}:`, result);
+                    resolve(result);
+                };
+                request.onerror = (event) => {
+                    console.error(`Error getting item from ${storeName}:`, event.target.error);
+                    reject(event.target.error);
+                };
+            });
+        }
+    };
+
+
+    // --- UI & APP LOGIC ---
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            console.log('Initializing application...');
+            await initDB();
+            console.log('Database initialized, loading data...');
+            
+            // Load initial data with filters
+            await filterAndRenderNovedades();
+            await filterAndRenderConsignas();
+
+            // Setup event listeners
+            setupEventListeners();
+
+            // Notifications
+            checkAndRequestNotificationPermission();
+            setInterval(sendPendingTaskReminders, 60 * 60 * 1000); // Check for reminders every hour
+            
+            console.log('Application initialized successfully');
+        } catch (error) {
+            console.error('Error initializing application:', error);
+            alert('Error al inicializar la aplicación. Por favor, recarga la página.');
+        }
+    });
+
+    function setupEventListeners() {
+        // Form submissions
+        document.getElementById('novedad-form').addEventListener('submit', handleNovedadSubmit);
+        document.getElementById('consigna-form').addEventListener('submit', handleConsignaSubmit);
+
+        // Modal closing
+        window.addEventListener('click', (event) => {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target.id);
+            }
+        });
+
+        // Filter event listeners
+        document.getElementById('novedad-search').addEventListener('input', filterAndRenderNovedades);
+        document.getElementById('novedad-filter-prioridad').addEventListener('change', filterAndRenderNovedades);
+        document.getElementById('novedad-filter-estado').addEventListener('change', filterAndRenderNovedades);
+        
+        document.getElementById('consigna-search').addEventListener('input', filterAndRenderConsignas);
+        document.getElementById('consigna-filter-estado').addEventListener('change', filterAndRenderConsignas);
+    }
+    
+    // --- NOTIFICATIONS ---
+    function checkAndRequestNotificationPermission() {
+        if (!("Notification" in window)) {
+            console.log("This browser does not support desktop notification");
+        } else if (Notification.permission === "granted") {
+            console.log("Notification permission already granted.");
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    console.log("Notification permission granted.");
+                    new Notification("¡Notificaciones activadas!", {
+                        body: "Recibirás recordatorios de tareas importantes.",
+                        icon: "✅"
+                    });
+                }
+            });
+        }
+    }
+
+    function sendNotification(title, options) {
+        if (Notification.permission === "granted") {
+            new Notification(title, options);
+        }
+    }
+
+    async function sendPendingTaskReminders() {
+        const novedades = await dbManager.getAll(NOVEDADES_STORE);
+        const pendingHighPriority = novedades.filter(n => n.prioridad === 'Alta' && !n.completed);
+
+        if (pendingHighPriority.length > 0) {
+            sendNotification("Recordatorio de Tareas Pendientes", {
+                body: `Tienes ${pendingHighPriority.length} novedad(es) de alta prioridad sin completar.`,
+                icon: "📝"
+            });
+        }
+    }
+
+
+    // --- NOVEDADES ---
+    async function filterAndRenderNovedades() {
+        try {
+            console.log('Loading novedades...');
+            const novedades = await dbManager.getAll(NOVEDADES_STORE);
+            const container = document.getElementById('novedades-container');
+            container.innerHTML = '';
+
+            // Get filter values
+            const searchTerm = document.getElementById('novedad-search').value.toLowerCase();
+            const priorityFilter = document.getElementById('novedad-filter-prioridad').value;
+            const statusFilter = document.getElementById('novedad-filter-estado').value;
+
+            const filteredNovedades = novedades.filter(item => {
+                const matchesSearch = item.descripcion.toLowerCase().includes(searchTerm) || item.responsable.toLowerCase().includes(searchTerm);
+                const matchesPriority = !priorityFilter || item.prioridad === priorityFilter;
+                const matchesStatus = statusFilter === "" || String(item.completed) === statusFilter;
+                return matchesSearch && matchesPriority && matchesStatus;
+            });
+
+            if (filteredNovedades.length === 0) {
+                container.innerHTML = '<p>No se encontraron novedades que coincidan con los filtros.</p>';
+                return;
+            }
+            filteredNovedades.forEach(item => container.appendChild(createNovedadCard(item)));
+            console.log(`Rendered ${filteredNovedades.length} novedades`);
+        } catch (error) {
+            console.error('Error loading novedades:', error);
+            const container = document.getElementById('novedades-container');
+            container.innerHTML = '<p>Error al cargar las novedades. Por favor, recarga la página.</p>';
+        }
+    }
+
+    function createNovedadCard(novedad) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.id = novedad.id;
+        card.dataset.completed = novedad.completed || false;
+        const today = new Date().toLocaleDateString();
+        const itemDate = new Date(novedad.date).toLocaleDateString();
+
+        card.innerHTML = `
+            <div class="card-header">
+                <h3 class="card-title">${novedad.descripcion}</h3>
+                <span class="priority-badge priority-${novedad.prioridad}">${novedad.prioridad}</span>
+            </div>
+            <p class="card-description">${novedad.observaciones || ''}</p>
+            <div class="card-meta">
+                <span>👤 ${novedad.responsable}</span>
+                <span>🕐 ${novedad.horaInicio}</span>
+                <span>📅 ${today === itemDate ? 'Hoy' : itemDate}</span>
+            </div>
+            <div class="card-actions">
+                <button class="btn btn-secondary btn-edit">✏️ Editar</button>
+                <button class="btn btn-danger btn-delete">🗑️ Eliminar</button>
+                <button class="btn btn-primary btn-complete">${novedad.completed ? '✓ Completada' : 'Marcar como completada'}</button>
+            </div>
+        `;
+
+        card.querySelector('.btn-edit').addEventListener('click', () => openNovedadModal(novedad));
+        card.querySelector('.btn-delete').addEventListener('click', () => confirmDelete(NOVEDADES_STORE, novedad.id, filterAndRenderNovedades));
+        card.querySelector('.btn-complete').addEventListener('click', () => toggleNovedadComplete(novedad));
+
+        return card;
+    }
+
+    function openNovedadModal(novedad = null) {
+        const modal = document.getElementById('novedad-modal');
+        const form = document.getElementById('novedad-form');
+        form.reset();
+
+        if (novedad) {
+            document.getElementById('novedad-modal-title').textContent = 'Editar Novedad';
+            document.getElementById('novedad-id').value = novedad.id;
+            document.getElementById('novedad-descripcion').value = novedad.descripcion;
+            document.getElementById('novedad-responsable').value = novedad.responsable;
+            document.getElementById('novedad-hora-inicio').value = novedad.horaInicio;
+            document.getElementById('novedad-prioridad').value = novedad.prioridad;
+            document.getElementById('novedad-observaciones').value = novedad.observaciones;
+        } else {
+            document.getElementById('novedad-modal-title').textContent = 'Nueva Novedad';
+            document.getElementById('novedad-id').value = '';
+        }
+        modal.classList.add('active');
+    }
+
+    async function handleNovedadSubmit(event) {
+        event.preventDefault();
+        
+        try {
+            const id = document.getElementById('novedad-id').value;
+            const novedadData = {
+                descripcion: document.getElementById('novedad-descripcion').value,
+                responsable: document.getElementById('novedad-responsable').value,
+                horaInicio: document.getElementById('novedad-hora-inicio').value,
+                prioridad: document.getElementById('novedad-prioridad').value,
+                observaciones: document.getElementById('novedad-observaciones').value,
+                date: new Date().toISOString(),
+                completed: false,
+            };
+
+            if (id) {
+                // Actualizar novedad existente - obtener datos actuales primero
+                const existingNovedad = await dbManager.get(NOVEDADES_STORE, parseInt(id, 10));
+                if (existingNovedad) {
+                    novedadData.id = parseInt(id, 10);
+                    novedadData.completed = existingNovedad.completed; // Preservar estado de completed
+                    novedadData.date = existingNovedad.date; // Preservar fecha original
+                }
+                
+                await dbManager.update(NOVEDADES_STORE, novedadData);
+                showSuccessMessage('Novedad actualizada con éxito');
+                console.log('Novedad updated:', novedadData);
+            } else {
+                // Crear nueva novedad
+                const result = await dbManager.add(NOVEDADES_STORE, novedadData);
+                showSuccessMessage('Novedad creada con éxito');
+                console.log('Novedad created with ID:', result);
+                
+                // Send notification for new high-priority tasks
+                if (novedadData.prioridad === 'Alta') {
+                    sendNotification('Nueva Tarea de Alta Prioridad', {
+                        body: novedadData.descripcion,
+                        icon: '📝'
+                    });
+                }
+            }
+            
+            closeModal('novedad-modal');
+            await filterAndRenderNovedades();
+        } catch (error) {
+            console.error('Error saving novedad:', error);
+            alert('Error al guardar la novedad. Por favor, inténtalo de nuevo.');
+        }
+    }
+    
+    async function toggleNovedadComplete(novedad) {
+        try {
+            novedad.completed = !novedad.completed;
+            await dbManager.update(NOVEDADES_STORE, novedad);
+            console.log('Novedad completion toggled:', novedad.id, novedad.completed);
+            await filterAndRenderNovedades();
+        } catch (error) {
+            console.error('Error toggling novedad completion:', error);
+            alert('Error al actualizar el estado de la novedad.');
+        }
+    }
+    
+    // --- CONSIGNAS ---
+    async function filterAndRenderConsignas() {
+        try {
+            console.log('Loading consignas...');
+            const consignas = await dbManager.getAll(CONSIGNAS_STORE);
+            const container = document.getElementById('consignas-container');
+            container.innerHTML = '';
+
+            const searchTerm = document.getElementById('consigna-search').value.toLowerCase();
+            const statusFilter = document.getElementById('consigna-filter-estado').value;
+
+            const filteredConsignas = consignas.filter(item => {
+                const matchesSearch = item.titulo.toLowerCase().includes(searchTerm) || item.asignado.toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilter === "" || String(item.completed) === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+
+            if (filteredConsignas.length === 0) {
+                container.innerHTML = '<p>No se encontraron consignas que coincidan con los filtros.</p>';
+                return;
+            }
+            filteredConsignas.forEach(item => container.appendChild(createConsignaCard(item)));
+            console.log(`Rendered ${filteredConsignas.length} consignas`);
+        } catch (error) {
+            console.error('Error loading consignas:', error);
+            const container = document.getElementById('consignas-container');
+            container.innerHTML = '<p>Error al cargar las consignas. Por favor, recarga la página.</p>';
+        }
+    }
+
+
+    function createConsignaCard(consigna) {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.id = consigna.id;
+        card.dataset.completed = consigna.completed || false;
+        
+        card.innerHTML = `
+            <div class="card-header">
+                <div class="checkbox-wrapper">
+                    <input type="checkbox" class="checkbox" ${consigna.completed ? 'checked' : ''}>
+                    <h3 class="card-title" data-completed="${consigna.completed || false}">${consigna.titulo}</h3>
+                </div>
+            </div>
+            <p class="card-description">${consigna.descripcion || ''}</p>
+            <div class="card-meta">
+                <span>👤 ${consigna.asignado}</span>
+            </div>
+            <div class="card-actions">
+                <button class="btn btn-secondary btn-edit">✏️ Editar</button>
+                <button class="btn btn-danger btn-delete">🗑️ Eliminar</button>
+            </div>
+        `;
+        
+        card.querySelector('.btn-edit').addEventListener('click', () => openConsignaModal(consigna));
+        card.querySelector('.btn-delete').addEventListener('click', () => confirmDelete(CONSIGNAS_STORE, consigna.id, filterAndRenderConsignas));
+        card.querySelector('.checkbox').addEventListener('change', (e) => toggleConsignaComplete(consigna, e.target.checked));
+        
+        return card;
+    }
+
+    function openConsignaModal(consigna = null) {
+        const modal = document.getElementById('consigna-modal');
+        const form = document.getElementById('consigna-form');
+        form.reset();
+
+        if (consigna) {
+            document.getElementById('consigna-modal-title').textContent = 'Editar Consigna';
+            document.getElementById('consigna-id').value = consigna.id;
+            document.getElementById('consigna-titulo').value = consigna.titulo;
+            document.getElementById('consigna-asignado').value = consigna.asignado;
+            document.getElementById('consigna-descripcion').value = consigna.descripcion;
+        } else {
+            document.getElementById('consigna-modal-title').textContent = 'Nueva Consigna';
+            document.getElementById('consigna-id').value = '';
+        }
+        modal.classList.add('active');
+    }
+
+    async function handleConsignaSubmit(event) {
+        event.preventDefault();
+        
+        try {
+            const id = document.getElementById('consigna-id').value;
+            const consignaData = {
+                titulo: document.getElementById('consigna-titulo').value,
+                asignado: document.getElementById('consigna-asignado').value,
+                descripcion: document.getElementById('consigna-descripcion').value,
+                completed: false
+            };
+
+            if (id) {
+                // Actualizar consigna existente - obtener datos actuales primero
+                const existingConsigna = await dbManager.get(CONSIGNAS_STORE, parseInt(id, 10));
+                if (existingConsigna) {
+                    consignaData.id = parseInt(id, 10);
+                    consignaData.completed = existingConsigna.completed; // Preservar estado de completed
+                }
+                
+                await dbManager.update(CONSIGNAS_STORE, consignaData);
+                showSuccessMessage('Consigna actualizada con éxito');
+                console.log('Consigna updated:', consignaData);
+            } else {
+                // Crear nueva consigna
+                const result = await dbManager.add(CONSIGNAS_STORE, consignaData);
+                showSuccessMessage('Consigna creada con éxito');
+                console.log('Consigna created with ID:', result);
+            }
+
+            closeModal('consigna-modal');
+            await filterAndRenderConsignas();
+        } catch (error) {
+            console.error('Error saving consigna:', error);
+            alert('Error al guardar la consigna. Por favor, inténtalo de nuevo.');
+        }
+    }
+
+    async function toggleConsignaComplete(consigna, isChecked) {
+        try {
+            consigna.completed = isChecked;
+            await dbManager.update(CONSIGNAS_STORE, consigna);
+            console.log('Consigna completion toggled:', consigna.id, consigna.completed);
+            await filterAndRenderConsignas();
+        } catch (error) {
+            console.error('Error toggling consigna completion:', error);
+            alert('Error al actualizar el estado de la consigna.');
+        }
+    }
+
+    // --- GENERAL & UTILS ---
+
+    function confirmDelete(storeName, id, renderCallback) {
+        const confirmModal = document.getElementById('confirm-modal');
+        confirmModal.classList.add('active');
+
+        const confirmBtn = document.getElementById('confirm-delete-btn');
+        const cancelBtn = document.getElementById('cancel-delete-btn');
+
+        const confirmHandler = async () => {
+            try {
+                await dbManager.delete(storeName, id);
+                showSuccessMessage('Elemento eliminado');
+                console.log(`Item deleted from ${storeName} with ID:`, id);
+                await renderCallback();
+                closeModal('confirm-modal');
+                cleanup();
+            } catch (error) {
+                console.error('Error deleting item:', error);
+                alert('Error al eliminar el elemento.');
+                closeModal('confirm-modal');
+                cleanup();
+            }
+        };
+
+        const cancelHandler = () => {
+            closeModal('confirm-modal');
+            cleanup();
+        };
+
+        const cleanup = () => {
+            confirmBtn.removeEventListener('click', confirmHandler);
+            cancelBtn.removeEventListener('click', cancelHandler);
+        };
+        
+        confirmBtn.addEventListener('click', confirmHandler, { once: true });
+        cancelBtn.addEventListener('click', cancelHandler, { once: true });
+    }
+
+    function showSection(sectionId) {
+        document.getElementById('novedades-section').style.display = 'none';
+        document.getElementById('consignas-section').style.display = 'none';
+        
+        document.getElementById(`${sectionId}-section`).style.display = 'block';
+        
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`.nav-item[onclick="showSection('${sectionId}')"]`).classList.add('active');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('active');
+    }
+
+    function showSuccessMessage(message) {
+        const msgElement = document.getElementById('success-message');
+        msgElement.textContent = `✓ ${message}`;
+        msgElement.classList.add('show');
+        setTimeout(() => {
+            msgElement.classList.remove('show');
+        }, 3000);
+    }
+
+    // Función de debugging para verificar el estado de la base de datos
+    async function checkDBStatus() {
+        try {
+            console.log('=== Database Status Check ===');
+            const novedades = await dbManager.getAll(NOVEDADES_STORE);
+            const consignas = await dbManager.getAll(CONSIGNAS_STORE);
+            
+            console.log(`Novedades in database: ${novedades.length}`);
+            console.log('Novedades data:', novedades);
+            console.log(`Consignas in database: ${consignas.length}`);
+            console.log('Consignas data:', consignas);
+            console.log('=== End Database Status ===');
+            
+            return { novedades, consignas };
+        } catch (error) {
+            console.error('Error checking database status:', error);
+            return null;
+        }
+    }
+
+    // Hacer la función disponible globalmente para debugging
+    window.checkDBStatus = checkDBStatus;
+
+    </script>
+</body>
+</html>
