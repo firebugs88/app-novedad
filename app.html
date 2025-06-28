@@ -354,9 +354,9 @@
                 <div class="header">
                     <h1 class="page-title">Novedades Diarias</h1>
                     <div class="header-actions">
-                        <button class="btn btn-secondary" id="export-novedades-btn">
+                        <button class="btn btn-secondary" id="export-all-btn">
                             <span>📄</span>
-                            <span>Exportar a CSV</span>
+                            <span>Exportar Todo (CSV)</span>
                         </button>
                         <button class="btn btn-primary" onclick="openNovedadModal()">
                             <span>+</span>
@@ -695,7 +695,7 @@
         document.getElementById('consigna-filter-estado').addEventListener('change', filterAndRenderConsignas);
 
         // Export button
-        document.getElementById('export-novedades-btn').addEventListener('click', exportNovedadesToCSV);
+        document.getElementById('export-all-btn').addEventListener('click', exportAllDataToCSV);
     }
     
     // --- NOTIFICATIONS ---
@@ -776,6 +776,7 @@
         card.dataset.completed = novedad.completed || false;
         const today = new Date().toLocaleDateString();
         const itemDate = new Date(novedad.date).toLocaleDateString();
+        const completionDate = novedad.completed && novedad.completionDate ? new Date(novedad.completionDate).toLocaleString('es-ES') : '';
 
         card.innerHTML = `
             <div class="card-header">
@@ -786,7 +787,8 @@
             <div class="card-meta">
                 <span>👤 ${novedad.responsable}</span>
                 <span>🕐 ${novedad.horaInicio}</span>
-                <span>📅 ${today === itemDate ? 'Hoy' : itemDate}</span>
+                <span>📅 Creación: ${today === itemDate ? 'Hoy' : itemDate}</span>
+                ${completionDate ? `<span>✅ Finalización: ${completionDate}</span>` : ''}
             </div>
             <div class="card-actions">
                 <button class="btn btn-secondary btn-edit">✏️ Editar</button>
@@ -875,6 +877,11 @@
     async function toggleNovedadComplete(novedad) {
         try {
             novedad.completed = !novedad.completed;
+            if (novedad.completed) {
+                novedad.completionDate = new Date().toISOString();
+            } else {
+                novedad.completionDate = null;
+            }
             await dbManager.update(NOVEDADES_STORE, novedad);
             console.log('Novedad completion toggled:', novedad.id, novedad.completed);
             await filterAndRenderNovedades();
@@ -920,6 +927,7 @@
         card.className = 'card';
         card.dataset.id = consigna.id;
         card.dataset.completed = consigna.completed || false;
+        const completionDate = consigna.completed && consigna.completionDate ? new Date(consigna.completionDate).toLocaleString('es-ES') : '';
         
         card.innerHTML = `
             <div class="card-header">
@@ -931,6 +939,7 @@
             <p class="card-description">${consigna.descripcion || ''}</p>
             <div class="card-meta">
                 <span>👤 ${consigna.asignado}</span>
+                ${completionDate ? `<span>✅ Finalización: ${completionDate}</span>` : ''}
             </div>
             <div class="card-actions">
                 <button class="btn btn-secondary btn-edit">✏️ Editar</button>
@@ -1004,6 +1013,11 @@
     async function toggleConsignaComplete(consigna, isChecked) {
         try {
             consigna.completed = isChecked;
+            if (consigna.completed) {
+                consigna.completionDate = new Date().toISOString();
+            } else {
+                consigna.completionDate = null;
+            }
             await dbManager.update(CONSIGNAS_STORE, consigna);
             console.log('Consigna completion toggled:', consigna.id, consigna.completed);
             await filterAndRenderConsignas();
@@ -1015,36 +1029,55 @@
 
     // --- GENERAL & UTILS ---
 
-    async function exportNovedadesToCSV() {
+    async function exportAllDataToCSV() {
         try {
-            console.log('Exporting novedades to CSV...');
-            const novedades = await dbManager.getAll(NOVEDADES_STORE);
+            console.log('Exporting all data to CSV...');
+            
+            const [novedades, consignas] = await Promise.all([
+                dbManager.getAll(NOVEDADES_STORE),
+                dbManager.getAll(CONSIGNAS_STORE)
+            ]);
 
-            if (novedades.length === 0) {
-                alert('No hay novedades para exportar.');
+            if (novedades.length === 0 && consignas.length === 0) {
+                alert('No hay datos para exportar.');
                 return;
             }
 
+            const escapeCSV = (text) => `"${String(text || '').replace(/"/g, '""')}"`;
+            
             const headers = [
-                'ID', 'Descripción', 'Responsable', 'Hora Inicio', 
-                'Prioridad', 'Observaciones', 'Fecha Creación', 'Completada'
+                'Tipo', 'ID', 'Título/Descripción', 'Responsable/Asignado', 'Hora Inicio', 
+                'Prioridad', 'Observaciones/Detalles', 'Fecha Creación', 'Fecha Finalización', 'Estado'
             ];
 
-            // Escapar comillas y envolver en comillas dobles para asegurar la integridad del CSV
-            const escapeCSV = (text) => `"${String(text || '').replace(/"/g, '""')}"`;
-
-            const rows = novedades.map(n => [
+            const novedadesRows = novedades.map(n => [
+                'Novedad',
                 n.id,
                 escapeCSV(n.descripcion),
                 escapeCSV(n.responsable),
                 n.horaInicio,
                 n.prioridad,
                 escapeCSV(n.observaciones),
-                new Date(n.date).toLocaleString('es-ES'),
-                n.completed ? 'Sí' : 'No'
+                escapeCSV(new Date(n.date).toLocaleString('es-ES')),
+                escapeCSV(n.completionDate ? new Date(n.completionDate).toLocaleString('es-ES') : ''),
+                n.completed ? 'Completada' : 'Pendiente'
             ].join(','));
 
-            const csvContent = [headers.join(','), ...rows].join('\n');
+            const consignasRows = consignas.map(c => [
+                'Consigna',
+                c.id,
+                escapeCSV(c.titulo),
+                escapeCSV(c.asignado),
+                '', // Hora Inicio (N/A)
+                '', // Prioridad (N/A)
+                escapeCSV(c.descripcion),
+                '', // Fecha Creación (N/A)
+                escapeCSV(c.completionDate ? new Date(c.completionDate).toLocaleString('es-ES') : ''),
+                c.completed ? 'Completada' : 'Pendiente'
+            ].join(','));
+
+            const allRows = [...novedadesRows, ...consignasRows];
+            const csvContent = [headers.join(','), ...allRows].join('\n');
             
             const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' }); // BOM para compatibilidad con Excel
             const link = document.createElement('a');
@@ -1052,7 +1085,7 @@
             
             link.setAttribute('href', url);
             const dateStr = new Date().toISOString().slice(0, 10);
-            link.setAttribute('download', `novedades_${dateStr}.csv`);
+            link.setAttribute('download', `reporte_completo_${dateStr}.csv`);
             link.style.visibility = 'hidden';
             
             document.body.appendChild(link);
