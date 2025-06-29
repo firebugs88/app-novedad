@@ -511,6 +511,10 @@
     const DB_NAME = 'GestionProDB';
     const NOVEDADES_STORE = 'novedades';
     const CONSIGNAS_STORE = 'consignas';
+    
+    // Cache variables
+    let novedadesCache = [];
+    let consignasCache = [];
 
     function initDB() {
         return new Promise((resolve, reject) => {
@@ -656,13 +660,16 @@
             await initDB();
             console.log('Database initialized, loading data...');
             
+            // Load initial data into cache
+            await loadDataToCache();
+    
             // Load initial data with filters
             await filterAndRenderNovedades();
             await filterAndRenderConsignas();
-
+    
             // Setup event listeners
             setupEventListeners();
-
+    
             // Notifications
             checkAndRequestNotificationPermission();
             setInterval(sendPendingTaskReminders, 60 * 60 * 1000); // Check for reminders every hour
@@ -734,28 +741,24 @@
             });
         }
     }
-
-
-    // --- NOVEDADES ---
     async function filterAndRenderNovedades() {
         try {
-            console.log('Loading novedades...');
-            const novedades = await dbManager.getAll(NOVEDADES_STORE);
+            console.log('Filtering novedades...');
             const container = document.getElementById('novedades-container');
             container.innerHTML = '';
-
+    
             // Get filter values
             const searchTerm = document.getElementById('novedad-search').value.toLowerCase();
             const priorityFilter = document.getElementById('novedad-filter-prioridad').value;
             const statusFilter = document.getElementById('novedad-filter-estado').value;
-
-            const filteredNovedades = novedades.filter(item => {
+    
+            const filteredNovedades = novedadesCache.filter(item => {
                 const matchesSearch = item.descripcion.toLowerCase().includes(searchTerm) || item.responsable.toLowerCase().includes(searchTerm);
                 const matchesPriority = !priorityFilter || item.prioridad === priorityFilter;
                 const matchesStatus = statusFilter === "" || String(item.completed) === statusFilter;
                 return matchesSearch && matchesPriority && matchesStatus;
             });
-
+    
             if (filteredNovedades.length === 0) {
                 container.innerHTML = '<p>No se encontraron novedades que coincidan con los filtros.</p>';
                 return;
@@ -763,7 +766,7 @@
             filteredNovedades.forEach(item => container.appendChild(createNovedadCard(item)));
             console.log(`Rendered ${filteredNovedades.length} novedades`);
         } catch (error) {
-            console.error('Error loading novedades:', error);
+            console.error('Error filtering novedades:', error);
             const container = document.getElementById('novedades-container');
             container.innerHTML = '<p>Error al cargar las novedades. Por favor, recarga la página.</p>';
         }
@@ -867,6 +870,7 @@
             }
             
             closeModal('novedad-modal');
+            await loadDataToCache();
             await filterAndRenderNovedades();
         } catch (error) {
             console.error('Error saving novedad:', error);
@@ -884,30 +888,28 @@
             }
             await dbManager.update(NOVEDADES_STORE, novedad);
             console.log('Novedad completion toggled:', novedad.id, novedad.completed);
+            await loadDataToCache();
             await filterAndRenderNovedades();
         } catch (error) {
             console.error('Error toggling novedad completion:', error);
             alert('Error al actualizar el estado de la novedad.');
         }
     }
-    
-    // --- CONSIGNAS ---
     async function filterAndRenderConsignas() {
         try {
-            console.log('Loading consignas...');
-            const consignas = await dbManager.getAll(CONSIGNAS_STORE);
+            console.log('Filtering consignas...');
             const container = document.getElementById('consignas-container');
             container.innerHTML = '';
-
+    
             const searchTerm = document.getElementById('consigna-search').value.toLowerCase();
             const statusFilter = document.getElementById('consigna-filter-estado').value;
-
-            const filteredConsignas = consignas.filter(item => {
+    
+            const filteredConsignas = consignasCache.filter(item => {
                 const matchesSearch = item.titulo.toLowerCase().includes(searchTerm) || item.asignado.toLowerCase().includes(searchTerm);
                 const matchesStatus = statusFilter === "" || String(item.completed) === statusFilter;
                 return matchesSearch && matchesStatus;
             });
-
+    
             if (filteredConsignas.length === 0) {
                 container.innerHTML = '<p>No se encontraron consignas que coincidan con los filtros.</p>';
                 return;
@@ -915,12 +917,11 @@
             filteredConsignas.forEach(item => container.appendChild(createConsignaCard(item)));
             console.log(`Rendered ${filteredConsignas.length} consignas`);
         } catch (error) {
-            console.error('Error loading consignas:', error);
+            console.error('Error filtering consignas:', error);
             const container = document.getElementById('consignas-container');
             container.innerHTML = '<p>Error al cargar las consignas. Por favor, recarga la página.</p>';
         }
     }
-
 
     function createConsignaCard(consigna) {
         const card = document.createElement('div');
@@ -1003,6 +1004,7 @@
             }
 
             closeModal('consigna-modal');
+            await loadDataToCache();
             await filterAndRenderConsignas();
         } catch (error) {
             console.error('Error saving consigna:', error);
@@ -1020,6 +1022,7 @@
             }
             await dbManager.update(CONSIGNAS_STORE, consigna);
             console.log('Consigna completion toggled:', consigna.id, consigna.completed);
+            await loadDataToCache();
             await filterAndRenderConsignas();
         } catch (error) {
             console.error('Error toggling consigna completion:', error);
@@ -1109,6 +1112,7 @@
                 await dbManager.delete(storeName, id);
                 showSuccessMessage('Elemento eliminado');
                 console.log(`Item deleted from ${storeName} with ID:`, id);
+                await loadDataToCache();
                 await renderCallback();
                 closeModal('confirm-modal');
                 cleanup();
@@ -1179,8 +1183,29 @@
         }
     }
 
+    // Load data into cache function
+    async function loadDataToCache() {
+        try {
+            console.log('Loading data to cache...');
+            const [novedades, consignas] = await Promise.all([
+                dbManager.getAll(NOVEDADES_STORE),
+                dbManager.getAll(CONSIGNAS_STORE)
+            ]);
+            
+            novedadesCache = novedades;
+            consignasCache = consignas;
+            
+            console.log(`Cache loaded: ${novedades.length} novedades, ${consignas.length} consignas`);
+        } catch (error) {
+            console.error('Error loading data to cache:', error);
+            novedadesCache = [];
+            consignasCache = [];
+        }
+    }
+
     // Hacer la función disponible globalmente para debugging
     window.checkDBStatus = checkDBStatus;
+    window.loadDataToCache = loadDataToCache;
 
     </script>
 </body>
